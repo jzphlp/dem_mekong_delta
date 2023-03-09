@@ -1,1 +1,1 @@
-## This repo contains code for TDX clean up at MekongDelta
+## This repo contains code for TDX clean up for Mekong Delta
