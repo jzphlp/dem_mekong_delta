@@ -31,15 +31,17 @@ def tarfile_extractall(tar_path,outdir):
     print('All files extracted')
 
 def buildVRT_bypath(vrt, path):
-    cmd = f'gdalbuildvrt {vrt} {os.path.join(path)}/*.tif'
-    os.system(cmd)
+    if not os.path.isfile(vrt):
+        cmd = f'gdalbuildvrt {vrt} {os.path.join(path)}/*.tif'
+        os.system(cmd)
     return vrt 
 
 def buildVRT_bytxt(txt, vrt):
-    # -a_srs  ESPG: UTMZONE or Global
-    cmd = f'gdalbuildvrt -input_file_list {txt} {vrt}'
-    # -vrtnodata -9999 
-    os.system(cmd)
+    if not os.path.isfile(vrt):
+        # -a_srs  ESPG: UTMZONE or Global
+        cmd = f'gdalbuildvrt -input_file_list {txt} {vrt}'
+        # -vrtnodata -9999 
+        os.system(cmd)
     print('done!!')
 
 def gdal_vrt2tif(vrt,tif):
