@@ -8,7 +8,8 @@ from glob import glob
 from UtilsGEE import * 
 
 
-VAR ='EDM' #'WBM'[1] EDM FLM HEM DEM : how do you edit dem so it's seamless? github guys,and documentation???
+VAR = 'FLM'#'EDM' #'WBM'[1]   HEM DEM 
+#: how do you edit dem so it's seamless? github guys,and documentation???
 gpkg_out = '/media/ljp238/6tb/Joseph/DATASETS/mekong_delta_data_tiles/wdir/1x1degree/gpkg_patches'
 os.makedirs(gpkg_out, exist_ok=True)
 data_path  = '/media/ljp238/6tb/Joseph/DATASETS/mekong_delta_data_tiles/wdir/1x1degree/'
@@ -16,6 +17,8 @@ outdir = '/media/ljp238/6tb/Joseph/DATASETS/COPDEM/'
 CPUS = int(os.cpu_count() * 0.9)
 SCALE = 30
 if __name__ == '__main__':
+
+    ti = time.perf_counter()
 
     fs = glob(f'{data_path}/*/*.tif'); print(len(fs))
     tdxs = [i for i in fs if 'TANDEMX.tif' in i]
@@ -56,4 +59,6 @@ if __name__ == '__main__':
     
     
     print('The End')
+    tf = time.perf_counter() - ti 
+    print(f'run.time {tf/60}')
 
