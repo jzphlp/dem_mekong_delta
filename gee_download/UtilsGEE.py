@@ -77,7 +77,7 @@ def get_S1mosaic(aoi,pol='VV', opass='ASCENDING',idate='2019-01-01',fdate='2022-
     return s1img
 
 
-def gee_download_geemap_s1(image,outpath, scale):
+def gee_download_geemap(image,outpath, scale):
     print(outpath)
     if os.path.isfile(outpath):
         print('Already downloaded') 
@@ -89,9 +89,35 @@ def getS1patch(i,g,pol,name,S1tile_path,scale):
     region, fname = get_ee_geometry(i, g,name)
     s1img = get_S1mosaic(region, pol)
     outpath = os.path.join(S1tile_path, fname)
-    gee_download_geemap_s1(s1img,outpath, scale)
+    gee_download_geemap(s1img,outpath, scale)
     time.sleep(0.5)
 
 
 
+def maskClouds(image):
+    qa = image.select('QA60')
+    cloudBitMask = int(2**10)
+    cirrusBitMask = int(2**11)
+    mask = qa.bitwiseAnd(cloudBitMask).eq(0) \
+        .And(qa.bitwiseAnd(cirrusBitMask).eq(0))
+    return image.updateMask(mask).divide(10000)
 
+
+def getS2_RGBmedian(region,CLOUD_FILTER=10):
+    s2coll = ee.ImageCollection('COPERNICUS/S2_SR') \
+             .filterBounds(region) \
+             .filterDate('2021', '2022') \
+             .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', CLOUD_FILTER))
+    
+
+    sentinel2_masked = s2coll.map(maskClouds)
+    rgb_bands = ['B4', 'B3', 'B2']
+    rgb = sentinel2_masked.select(rgb_bands).median().clip(region)
+    return rgb 
+
+def getS2RGBpatch(i,g,name,S2tile_path,scale):
+    region, fname = get_ee_geometry(i, g,name)
+    rgb = getS2_RGBmedian(region)
+    outpath = os.path.join(S2tile_path, fname)
+    gee_download_geemap(rgb,outpath, scale)
+    time.sleep(0.5)
