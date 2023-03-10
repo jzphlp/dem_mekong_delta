@@ -64,5 +64,34 @@ def gee_download_geemap(image,outpath, scale):
         geemap.ee_export_image(image, outpath, scale=scale)
 
 
+def get_S1mosaic(aoi,pol='VV', opass='ASCENDING',idate='2019-01-01',fdate='2022-12-01'):
+    sentinel1 = ee.ImageCollection('COPERNICUS/S1_GRD') \
+    .filter(ee.Filter.eq('instrumentMode','IW')) \
+    .filterDate(idate,fdate).filter(ee.Filter.listContains('transmitterReceiverPolarisation', pol)) \
+    .filter(ee.Filter.eq('orbitProperties_pass',opass)) \
+    .filter(ee.Filter.eq('resolution_meters',10)) \
+    .filterBounds(aoi)\
+    # play with params and see what kind of data you  can get
+    s1img = ee.Image(sentinel1.mosaic().clip(aoi))
+    
+    return s1img
+
+
+def gee_download_geemap_s1(image,outpath, scale):
+    print(outpath)
+    if os.path.isfile(outpath):
+        print('Already downloaded') 
+    else:
+        geemap.ee_export_image(image, outpath, scale=scale)
+
+def getS1patch(i,g,pol,name,S1tile_path,scale):
+    #if not os.path.isfile
+    region, fname = get_ee_geometry(i, g,name)
+    s1img = get_S1mosaic(region, pol)
+    outpath = os.path.join(S1tile_path, fname)
+    gee_download_geemap_s1(s1img,outpath, scale)
+    time.sleep(0.5)
+
+
 
 
