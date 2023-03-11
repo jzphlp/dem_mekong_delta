@@ -1,7 +1,10 @@
 
 # TODO 
 [x] add edit ndv 
-[x] test the code >> TDM DEM null editing did not work well : next step will help 
+[x] test the code >> TDM DEM null editing did not work well : 
+[]  find orginal null values for TDMX and Lidar and edit null with 
+
+next step will help 
 ### pipeline 2 {add to the code for tiling}:
 ###### deal with tdx null values - values in tdemx clean up 
 ###### deal with categorical data : fill classes like you'd for tabluar - eg. wsf as binary  

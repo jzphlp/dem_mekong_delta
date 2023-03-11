@@ -5,11 +5,14 @@ from geotile import GeoTile
 #from FUtils import *
 from glob import glob 
 from osgeo import gdal, gdalconst
+from pygeotools.lib import iolib
+from osgeo import gdal
+from scipy import stats
 
 import os 
 import time 
 import rasterio
-
+import scipy.ndimage as ndimage
 
 import geopandas as gpd
 import pandas as pd 
@@ -107,7 +110,7 @@ def gdal_regrid(fi, fo,xmin,ymin, xmax, ymax,
                 {fi} {fo}'
             # -t_srs {t_epsg} # -te_srs {t_epsg}\ -tr {res} {-res} \ #-tap with -tr xres yres
         os.system(cmd)
-       # time.sleep(0.2)
+        time.sleep(0.2)
        # gdal_edit_ndv(fo, dsnndv)
     except:
         pass
@@ -123,7 +126,6 @@ def gdal_unsetndv(path):
 
 
 def gdal_edit_ndv(path, ndv):
-    # unsetnodata: remove exisiting nodata 
     # -a_nodata : assing a specific nodata value
     cmd = f'gdal_edit.py -a_nodata {ndv} {path}'
     os.system(cmd)
@@ -149,6 +151,59 @@ def get_raster_info(tif_path):
     ds = None
     # Return all results
     return proj, xres, yres,xmin, xmax, ymin, ymax, w, h
+
+def tdx_noise_removal(tdxdem_path, tdxcom_path, copwbm_path):
+    ndv_vals =-32767.
+    ndv_msks = 0.0 
+
+    print('Applying ndv')
+    gdal_edit_ndv(copwbm_path, ndv_msks)
+    gdal_edit_ndv(tdxcom_path, ndv_msks)
+    gdal_edit_ndv(tdxdem_path, ndv_vals)
+
+    print('Applying mask for DEM')
+    dem_fn = tdxdem_path #glob.glob(os.path.join(tiledir, 'DEM/*DEM.tif'))[0]
+    print(dem_fn)
+    dem_ds = iolib.fn_getds(dem_fn)
+    dem = iolib.ds_getma(dem_ds)
+    print(dem.count())
+    #Get original mask, True where masked
+    mask = np.ma.getmaskarray(dem) 
+
+    print('Applying mask for WBM')
+    wbm = iolib.fn_getma(copwbm_path)
+    wbm_invalid = (1,2,3)
+    mask = np.logical_or(mask, np.isin(wbm.data, wbm_invalid))
+
+    print('Applying mask for COM')
+    com_fn = tdxcom_path#glob.glob(os.path.join(tiledir, 'AUXFILES/*COM.tif'))[0]
+    com = iolib.fn_getma(com_fn)
+    com_valid = (8,9,10)
+    #4 is only one obs
+    #com_invalid = (0,1,4)
+    com_invalid = (0,1)
+    mask = np.logical_or(mask, np.isin(com.data, com_invalid))
+
+    print('Applying mask filter for TDX')
+    dem_masked = np.ma.array(dem, mask=mask)
+    print(dem_masked.count())
+
+    tif_masked = tdxdem_path.replace('.tif', '_masked.tif')
+    iolib.writeGTiff(dem_masked, tif_masked, dem_ds)
+
+    print('Applying morphological mask filter for TDX')
+    n_iter = 1
+    mask = ndimage.morphology.binary_dilation(mask, iterations=n_iter)
+    #To keep valid edges, do subsequent erosion 
+    mask = ndimage.morphology.binary_erosion(mask, iterations=n_iter)
+    #(dilation of inverted mask, to avoid maasking outer edge)
+    #mask = ~(ndimage.morphology.binary_dilation(~mask, iterations=n_iter))
+    tif_erode = tdxdem_path.replace('.tif', '_erode.tif')
+    iolib.writeGTiff(dem_masked, tif_erode, dem_ds)
+    gdal_edit_ndv(tif_erode, -9999.)
+    gdal_edit_ndv(tif_masked, -9999.)
+
+    return tif_erode, tif_masked
 
 ### bounded rasters together with tdemx clean up , also make categorical rasters fill na classes like you'd for tabular 
 
@@ -228,13 +283,15 @@ def tiling_pipeline(
     if os.path.isfile(lidar_tile): print(f'File already created {lidar_tile}')
     else: lidar_tile = gdal_regrid(lidar_file, lidar_tile,xmin, ymin, xmax, ymax)
     ds['lidar'] = lidar_tile
-    gdal_edit_ndv(lidar_tile, ndvn)
+    ndv_lidar = -3.4028230607370965e+38
+    gdal_edit_ndv(lidar_tile, ndv_lidar)
 
     tandemx_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(tdxdem_file)).replace('.vrt','.tif')
     if os.path.isfile(tandemx_tile): print(f'File already created {tandemx_tile}')
     else: tandemx_tile = gdal_regrid(tdxdem_file, tandemx_tile, xmin, ymin, xmax, ymax)
     ds['tdemx'] = tandemx_tile
-    gdal_edit_ndv(tandemx_tile, ndvn)
+    tdx_ndv_vals =-32767.
+    gdal_edit_ndv(tandemx_tile, tdx_ndv_vals)
 
     nasadem_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(nasa_file)).replace('.vrt','.tif')
     if os.path.isfile(nasadem_tile): print(f'File already created {nasadem_tile}')
@@ -312,7 +369,7 @@ def tiling_pipeline(
 
     copwbm_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(copwbm_file)).replace('.vrt','.tif')
     if os.path.isfile(copwbm_tile): print(f'File already created {copwbm_tile}')
-    else: copwbm_tile = gdal_regrid(esawc_file, copwbm_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
+    else: copwbm_tile = gdal_regrid(copwbm_file, copwbm_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['copwbm'] = copwbm_tile
     gdal_edit_ndv(copwbm_tile, ndvc)
 
@@ -340,6 +397,15 @@ def tiling_pipeline(
     ds['tdxfnf'] = tdxfnf_tile
     gdal_edit_ndv(tdxfnf_tile, ndvc)
 
+
+    print(
+    #########################################################################################################
+    ###################################### NOISE REMOVAL TDMX ####################################
+    #########################################################################################################
+    )
+
+    tif_erode, tif_masked = tdx_noise_removal(tandemx_tile, tdxcom_tile, copwbm_tile)
+
     # vertical datum transformations tdemx,lidar, [zdiff],aw3d,nasa,merit 
     print(
     #########################################################################################################
@@ -349,11 +415,11 @@ def tiling_pipeline(
 
     tandemx_tile_egm08 = tandemx_tile.replace('.tif', '_EGM08.tif')
     if os.path.isfile(tandemx_tile_egm08): print(f'File already created {tandemx_tile_egm08}')
-    else: tandemx_tile_egm08 = dem_geoid_h2H(tandemx_tile_egm08, tandemx_tile, egm08_tile)
+    else: tandemx_tile_egm08 = dem_geoid_h2H(tandemx_tile_egm08, tif_erode, egm08_tile) # tandemx_tile>tif_erode
     ds['tdemx_egm08'] = tandemx_tile_egm08
     gdal_edit_ndv(tandemx_tile_egm08, ndvn)
 
-    lidar_tile_egm08 = lidar_tile.replace('.vrt', '_EGM08.tif')
+    lidar_tile_egm08 = lidar_tile.replace('.tif', '_EGM08.tif')
     if os.path.isfile(lidar_tile_egm08): print(f'File already created {lidar_tile_egm08}')
     else: lidar_tile_egm08 = dem_geoid_H2H(lidar_tile_egm08, egm08_tile,lidar_tile, lgeoid_tile)
     #gdal_regrid(lidar_file, lidar_tile,xmin, ymin, xmax, ymax)
