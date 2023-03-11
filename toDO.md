@@ -3,6 +3,7 @@
 [x] add edit ndv 
 [x] test the code >> TDM DEM null editing did not work well : 
 []  find orginal null values for TDMX and Lidar and edit null with 
+[] collect viz functions 
 
 next step will help 
 ### pipeline 2 {add to the code for tiling}:
@@ -15,15 +16,15 @@ next step will help
 
  if tdxcleanup.py is done before the tiling.py : then we can create less layers
  run through subprocess.run() or os.system() like for the lisflood:
-    tdxcleanup.py
-    tiling.py
+   [x] tdxcleanup.py
+   [x] tiling.py
     patching.py
     1D_desing_experiment.py: create 1DF by patches with ID, sampling for spatial cross validation, train, test, valid and data scaling
     1D_modllling_catboost.py [baseline] : catboost with many resampling techniques
     1D_inference.py : prediciton metrics and viz
     2D_modelling: DL4earth
     2D_psols_ddr.py
-    2D_unet_geoww.py : 
+   2D_unet_geoww.py :
     2D_bioms.py : 
     mlm_cgan.py
     deepbed.py
