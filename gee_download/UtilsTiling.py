@@ -62,6 +62,7 @@ def bounds2tilename(xmin,ymin):
     tile_name = f'{ta}_{tb}'
     tile_name = tile_name.replace('.','p')
     print(tile_name)
+    return tile_name
 
 
 def dem_geoid_h2H(Hfile, hfile, Nfile):
@@ -151,7 +152,7 @@ def get_raster_info(tif_path):
 
 ### bounded rasters together with tdemx clean up , also make categorical rasters fill na classes like you'd for tabular 
 
-roi_path = '/media/ljp238/6tb/Joseph/DATASETS/ROI_FILES'
+"""roi_path = '/media/ljp238/6tb/Joseph/DATASETS/ROI_FILES'
 
 aw3dh_file  = f'{roi_path}/AW3D_h.vrt'
 aw3dH_file  = f'{roi_path}/AW3D_H.vrt'
@@ -180,11 +181,11 @@ geoids_path = '/media/ljp238/6tb/Joseph/DATASETS/GEOIDS/geoid_grids'
 lgeoid_file = f'{geoids_path}/GEOID_FFT_20190703_Vietnam.tif'
 egm08_file =  f'{geoids_path}/egm2008-1.tif'
 egm96_file =  f'{geoids_path}/us_nga_egm96_15.tif'
+"""
 
 
 
-
-def preprocessing_pipeline(
+def tiling_pipeline(
     xmin, ymin, xmax, ymax,outdir_tile,tile_name,
     REGION, lgeoid_file, lidar_file, egm96_file,egm08_file,
     aw3dh_file,aw3dH_file,merit_file,nasa_file,copdem_file,
@@ -197,8 +198,13 @@ def preprocessing_pipeline(
     ds = {}
     ndvn = -9999.
     ndvc = 0.0 
-    algo_c='mode' #
-    dtype_c='Byte'#
+    algo_c='near' 
+    dtype_c='Byte'
+    print(
+    #########################################################################################################
+    ######################################NUMERICAL VARIABLES #############################################
+    #########################################################################################################
+    )
 
     lgeoid_tile = os.path.join(outdir_tile, tile_name +'_Lgeoid_'+os.path.basename(lgeoid_file))
     if os.path.isfile(lgeoid_tile): print(f'File already created {lgeoid_tile}')
@@ -216,6 +222,7 @@ def preprocessing_pipeline(
     if os.path.isfile(egm96_tile): print(f'File already created {egm96_tile}')
     else: egm96_tile = gdal_regrid(egm96_file, egm96_tile,xmin, ymin, xmax, ymax)
     ds['egm96'] = egm96_tile
+    gdal_edit_ndv(egm96_tile, ndvn)
 
     lidar_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(lidar_file)).replace('.vrt','.tif')
     if os.path.isfile(lidar_tile): print(f'File already created {lidar_tile}')
@@ -233,103 +240,125 @@ def preprocessing_pipeline(
     if os.path.isfile(nasadem_tile): print(f'File already created {nasadem_tile}')
     else: nasadem_tile = gdal_regrid(nasa_file, nasadem_tile, xmin, ymin, xmax, ymax)
     ds['nasa'] = nasadem_tile
+    gdal_edit_ndv(nasadem_tile, ndvn)
 
     aw3dh_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(aw3dh_file)).replace('.vrt','.tif')
     if os.path.isfile(aw3dh_tile): print(f'File already created {aw3dh_tile}')
     else: aw3dh_tile = gdal_regrid(aw3dh_file, aw3dh_tile, xmin, ymin, xmax, ymax)
     ds['aw3dh'] = aw3dh_tile
+    gdal_edit_ndv(aw3dh_tile, ndvn)
+
 
     aw3dH_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(aw3dH_file)).replace('.vrt','.tif')
     if os.path.isfile(aw3dH_tile): print(f'File already created {aw3dH_tile}')
     else: aw3dh_tile = gdal_regrid(aw3dH_file, aw3dH_tile, xmin, ymin, xmax, ymax)
     ds['aw3dH'] = aw3dH_tile
+    gdal_edit_ndv(aw3dH_tile, ndvn)
 
     cop_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(copdem_file)).replace('.vrt','.tif')
     if os.path.isfile(cop_tile): print(f'File already created {cop_tile}')
     else: gdal_regrid(copdem_file, cop_tile, xmin, ymin, xmax, ymax)
     ds['cop'] = cop_tile
+    gdal_edit_ndv(cop_tile, ndvn)
 
     merit_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(merit_file)).replace('.vrt','.tif')
     if os.path.isfile(merit_tile): print(f'File already created {merit_tile}')
     else: gdal_regrid(merit_file, merit_tile, xmin, ymin, xmax, ymax)
     ds['merit'] = merit_tile
+    gdal_edit_ndv(merit_tile, ndvn)
 
     sent1_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(sent1_file)).replace('.vrt','.tif')
     if os.path.isfile(sent1_tile): print(f'File already created {sent1_tile}')
     else: gdal_regrid(sent1_file, sent1_tile, xmin, ymin, xmax, ymax)
     ds['S1'] = sent1_tile
+    gdal_edit_ndv(sent1_tile, ndvn)
 
     sent2_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(sent2_file)).replace('.vrt','.tif')
     if os.path.isfile(sent2_tile): print(f'File already created {sent2_tile}')
     else: gdal_regrid(sent2_file, sent2_tile, xmin, ymin, xmax, ymax)
     ds['S2'] = sent2_tile
+    gdal_edit_ndv(sent2_tile, ndvn)
 
-
+    print(
     #########################################################################################################
     ######################################CATEGORICAL VARIABLES #############################################
     #########################################################################################################
+    )
 
 
     ethm_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(ethm_file)).replace('.vrt','.tif')
     if os.path.isfile(ethm_tile): print(f'File already created {ethm_tile}')
     else: ethm_tile = gdal_regrid(ethm_file, ethm_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['ethm'] = ethm_tile
+    gdal_edit_ndv(ethm_tile, ndvc)
 
     eths_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(eths_file)).replace('.vrt','.tif')
     if os.path.isfile(eths_tile): print(f'File already created {eths_tile}')
     else: eths_tile = gdal_regrid(eths_file, eths_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['eths'] = eths_tile
+    gdal_edit_ndv(eths_tile, ndvc)
 
     wsf_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(wsf_file)).replace('.vrt','.tif')
     if os.path.isfile(wsf_tile): print(f'File already created {wsf_tile}')
     else: wsf_tile = gdal_regrid(wsf_file, wsf_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['wsf'] = wsf_tile
+    gdal_edit_ndv(wsf_tile, ndvc)
 
     esawc_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(esawc_file)).replace('.vrt','.tif')
     if os.path.isfile(esawc_tile): print(f'File already created {esawc_tile}')
     else: esawc_tile = gdal_regrid(esawc_file, esawc_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['esawc'] = esawc_tile
+    gdal_edit_ndv(esawc_tile, ndvc)
 
     copwbm_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(copwbm_file)).replace('.vrt','.tif')
     if os.path.isfile(copwbm_tile): print(f'File already created {copwbm_tile}')
     else: copwbm_tile = gdal_regrid(esawc_file, copwbm_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['copwbm'] = copwbm_tile
+    gdal_edit_ndv(copwbm_tile, ndvc)
 
     tdxcom_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(tdxcom_file)).replace('.vrt','.tif')
     if os.path.isfile(tdxcom_tile): print(f'File already created {tdxcom_tile}')
     else: tdxcom_tile = gdal_regrid(tdxcom_file, tdxcom_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['tdxcom'] = tdxcom_tile
+    gdal_edit_ndv(tdxcom_tile, ndvc)
 
     tdxcov_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(tdxcov_file)).replace('.vrt','.tif')
     if os.path.isfile(tdxcov_tile): print(f'File already created {tdxcov_tile}')
     else: tdxcov_tile = gdal_regrid(tdxcov_file, tdxcov_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['tdxcov'] = tdxcov_tile
+    gdal_edit_ndv(tdxcov_tile, ndvc)
 
     tdxwam_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(tdxwam_file)).replace('.vrt','.tif')
     if os.path.isfile(tdxwam_tile): print(f'File already created {tdxwam_tile}')
     else: tdxwam_tile = gdal_regrid(tdxwam_file, tdxwam_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['tdxwam'] = tdxwam_tile
+    gdal_edit_ndv(tdxwam_tile, ndvc)
 
     tdxfnf_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(tdxfnf_file)).replace('.vrt','.tif')
     if os.path.isfile(tdxfnf_tile): print(f'File already created {tdxfnf_tile}')
     else: tdxfnf_tile = gdal_regrid(tdxfnf_file, tdxfnf_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
     ds['tdxfnf'] = tdxfnf_tile
+    gdal_edit_ndv(tdxfnf_tile, ndvc)
 
     # vertical datum transformations tdemx,lidar, [zdiff],aw3d,nasa,merit 
+    print(
     #########################################################################################################
     ######################################GEOID TRANSFORMATIONS AND ZDIFF ####################################
     #########################################################################################################
+    )
 
     tandemx_tile_egm08 = tandemx_tile.replace('.tif', '_EGM08.tif')
     if os.path.isfile(tandemx_tile_egm08): print(f'File already created {tandemx_tile_egm08}')
     else: tandemx_tile_egm08 = dem_geoid_h2H(tandemx_tile_egm08, tandemx_tile, egm08_tile)
     ds['tdemx_egm08'] = tandemx_tile_egm08
+    gdal_edit_ndv(tandemx_tile_egm08, ndvn)
 
     lidar_tile_egm08 = lidar_tile.replace('.vrt', '_EGM08.tif')
     if os.path.isfile(lidar_tile_egm08): print(f'File already created {lidar_tile_egm08}')
     else: lidar_tile_egm08 = dem_geoid_H2H(lidar_tile_egm08, egm08_tile,lidar_tile, lgeoid_tile)
     #gdal_regrid(lidar_file, lidar_tile,xmin, ymin, xmax, ymax)
     ds['lidar_egm08'] = lidar_tile_egm08
+    gdal_edit_ndv(lidar_tile_egm08, ndvn)
 
    
     nasadem_tile_egm08 = nasadem_tile.replace('.tif', '_EGM08.tif')
@@ -337,24 +366,33 @@ def preprocessing_pipeline(
     else: nasadem_tile = dem_geoid_H2H(nasadem_tile_egm08, egm08_tile,nasadem_tile, egm96_tile)
     #gdal_regrid(nasa_file, nasadem_tile, xmin, ymin, xmax, ymax)
     ds['nasa_egm08'] = nasadem_tile_egm08
+    gdal_edit_ndv(nasadem_tile_egm08, ndvn)
 
     aw3d_tile_egm08 = aw3dH_tile.replace('.tif', '_EGM08.tif')
     if os.path.isfile(aw3d_tile_egm08): print(f'File already created {aw3d_tile_egm08}')
     else: aw3d_tile_egm08 = dem_geoid_H2H(aw3d_tile_egm08, egm08_tile,aw3dH_tile, egm96_tile)
     #gdal_regrid(aw3d_file, aw3d_tile, xmin, ymin, xmax, ymax)
     ds['aw3d_egm08'] = aw3d_tile_egm08
+    gdal_edit_ndv(aw3d_tile_egm08, ndvn)
 
     merit_tile_egm08  = merit_tile.replace('.tif', '_EGM08.tif')
     if os.path.isfile(merit_tile_egm08): print(f'File already created {merit_tile_egm08}')
     else: merit_tile_egm08 = dem_geoid_H2H(merit_tile_egm08, egm08_tile,merit_tile, egm96_tile)
     #gdal_regrid(merit_file, merit_tile, xmin, ymin, xmax, ymax)
     ds['merit_egm08'] = merit_tile_egm08
+    gdal_edit_ndv(merit_tile_egm08, ndvn)
 
     zdif_tile = os.path.join(outdir_tile, tile_name +'_'+'zdif.tif')
     if os.path.isfile(zdif_tile): print(f'File already created {zdif_tile}')
     else: zdif_tile = get_zdiff(zdif_tile, tandemx_tile_egm08,lidar_tile_egm08)
     ds['zdif'] = zdif_tile
+    gdal_edit_ndv(zdif_tile, ndvn)
 
+    print(
+    #########################################################################################################
+    ###################################### CREATING CSV WITH PATHS TO FILES ################################
+    #########################################################################################################
+    )
 
     csv_out = os.path.join(outdir_tile,f'{REGION}_{tile_name}.csv')
     if os.path.isfile(csv_out):
