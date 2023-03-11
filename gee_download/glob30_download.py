@@ -8,7 +8,7 @@ from glob import glob
 from UtilsGEE import * 
 
 
-VAR = 'FLM'#'EDM' #'WBM'[1]   HEM DEM 
+VAR = 'DEM'#'FLM'#'EDM' #'WBM'[1]   HEM DEM 
 #: how do you edit dem so it's seamless? github guys,and documentation???
 gpkg_out = '/media/ljp238/6tb/Joseph/DATASETS/mekong_delta_data_tiles/wdir/1x1degree/gpkg_patches'
 os.makedirs(gpkg_out, exist_ok=True)
