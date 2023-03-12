@@ -7,6 +7,10 @@ def cp(fi, fo):
     shutil.copyfile(fi, fo)
     print('Done!!!')
 
+def filterlist(flist, k):
+    f = [i for i in flist if k in i]
+    f = f[0]
+    return f
 
 def dirlistfiles(dpath, ext, recursive=False):
     if not recursive:
@@ -64,7 +68,7 @@ def writepath2txt(txt, fs):
         for fi in fs:
             T.write(fi+'\n')
 
-#############################################################
+############################################################# all funtions up to go Utilstilling
 
 
 

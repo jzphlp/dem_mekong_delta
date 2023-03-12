@@ -18,10 +18,14 @@ next step will help
  run through subprocess.run() or os.system() like for the lisflood:
    [x] tdxcleanup.py
    [x] tiling.py
-    patching.py
+   [x] patching.py
+   1D workflow [baseline]
     1D_desing_experiment.py: create 1DF by patches with ID, sampling for spatial cross validation, train, test, valid and data scaling
-    1D_modllling_catboost.py [baseline] : catboost with many resampling techniques
+    1D_modllling_catboost.py: catboost with many resampling techniques
     1D_inference.py : prediciton metrics and viz
+    1D_DL : DL4Earth and rcv like that article 
+
+
     2D_modelling: DL4earth
     2D_psols_ddr.py
    2D_unet_geoww.py :
