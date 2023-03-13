@@ -1,1 +1,5 @@
-## This repo contains code for TDX clean-up for Mekong Delta
+## Mekong Delta TDX clean-up project
+
+Goal: Approximate a DTM from TDX using ML driven by LiDAR and Remote Sensing data 
+
+
