@@ -34,5 +34,8 @@ if __name__ == '__main__':
                 print(f'file:{tif_path} \ndir:{var_tile_patch_dir} \ngpkg:{gpkg_path}')
                 PEX.submit(geotile_generate_tiles, tif_path,gpkg_path,var_tile_patch_dir)
 
+
+
+
     tf = time.perf_counter() - ti 
     print(f'run.time {tf/60} min(s)')
