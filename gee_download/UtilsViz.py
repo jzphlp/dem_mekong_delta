@@ -3,8 +3,12 @@ from skimage import io, exposure
 import numpy as np 
 import os 
 
-lquantile = 0.2 
-uquantile = 0.8
+
+
+
+
+
+
 
 def plotS2RGB(rgb_path):
     image = io.imread(rgb_path)
@@ -20,7 +24,7 @@ def plotS2RGB(rgb_path):
     plt.show()
 
 
-def plot_hist_and_box(vals, nbin):
+def plot_hist_and_box(vals, nbin,uquantile = 0.8,lquantile = 0.2):
 
     lq = np.quantile(vals, lquantile)
     hq = np.quantile(vals, uquantile)

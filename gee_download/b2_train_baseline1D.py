@@ -22,8 +22,8 @@ stime = get_current_datetime_uk()
 # v3: sample train tiles A,B,C | predict B > each permutation 
 # v4: sample region - train all tiles and predict all tiles 
 
-Kpct = 0.1 # multiplying factor the min and max cop to threshold tdx : UW 
-Nsize = 5 
+Kpct = 0.07#0.1 # multiplying factor the min and max cop to threshold tdx : UW 
+Nsize = 1001
 path = '/media/ljp238/6tb/Joseph/DATASETS/OUT_TILES/1x1degree/'
 
 acols = ['x', 'y', 'zdif', 'lidar', 'tdx', 'cop', 'merit', 'nasa', 'aw3d', 's2r','s2g', 's2b', 'id']
