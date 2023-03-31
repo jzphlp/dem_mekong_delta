@@ -19,10 +19,17 @@ import pandas as pd
 import numpy as np 
 
 
+def dem_derivatives(fi, fo, mode='slope'):
+    cmd = f'gdaldem {mode} {fi} {fo} -co compress=lzw -compute_edges'
+    os.system(cmd)
+
 
 def tileindex(tdir,gpkg): #pkg = tdir + '.gpkg'
-    cmd = f'gdaltindex -t_srs EPSG:4326 -f GPKG {gpkg} {os.path.join(tdir)}/*.tif '
-    os.system(cmd)
+    if not os.path.exists(gpkg):
+        cmd = f'gdaltindex -t_srs EPSG:4326 -f GPKG {gpkg} {os.path.join(tdir)}/*.tif '
+        os.system(cmd)
+    else:
+        print('tileindex already exists')
 
 def retile(fi, tdir,C=True,ps=256):
     # it can take single or multi bands
@@ -205,6 +212,18 @@ def tdx_noise_removal(tdxdem_path, tdxcom_path, copwbm_path):
 
     return tif_erode, tif_masked
 
+
+def dict2csv(ds, csv_out):
+        #if os.path.isfile(csv_out):
+         ###   print(f'File already exist {csv_out}')
+        #else:
+        print(f'creating a new {csv_out}')
+        tnames  = list(ds.keys())
+        tpaths  = list(ds.values())
+        df = pd.DataFrame(tpaths, columns=['path'])
+        df['name'] = tnames
+        df.to_csv(csv_out, index=True)
+
 ### bounded rasters together with tdemx clean up , also make categorical rasters fill na classes like you'd for tabular 
 
 """roi_path = '/media/ljp238/6tb/Joseph/DATASETS/ROI_FILES'
@@ -246,7 +265,8 @@ def tiling_pipeline(
     aw3dh_file,aw3dH_file,merit_file,nasa_file,copdem_file,
     copwbm_file,ethm_file,eths_file,esawc_file,wsf_file,
     tdxcom_file,tdxcov_file,tdxfnf_file,tdxwam_file,
-    tdxdem_file,sent1_file,sent2_file
+    tdxdem_file,sent1_file,sent2_file,
+    bheight_file, bvolume_file, barea_file, bfraction_file
 ):
     
     
@@ -456,17 +476,80 @@ def tiling_pipeline(
 
     print(
     #########################################################################################################
+    ###################################### DEM DERIVATIVES ####################################
+    #########################################################################################################
+    )
+
+    tandemx_tile_slope = tandemx_tile.replace('.tif', '_SLOPE.tif')
+    if os.path.isfile(tandemx_tile_slope): print(f'File already created {tandemx_tile_slope}')
+    else: tandemx_tile_slope = dem_derivatives(tandemx_tile, tandemx_tile_slope, mode='slope')
+    ds['slope'] = tandemx_tile_slope
+
+
+    tandemx_tile_aspect = tandemx_tile.replace('.tif', '_ASPECT.tif')
+    if os.path.isfile(tandemx_tile_aspect): print(f'File already created {tandemx_tile_aspect}')
+    else: tandemx_tile_aspect = dem_derivatives(tandemx_tile, tandemx_tile_aspect, mode='aspect')
+    ds['aspect'] = tandemx_tile_aspect
+
+
+    tandemx_tile_tpi = tandemx_tile.replace('.tif', '_TPI.tif')
+    if os.path.isfile(tandemx_tile_tpi): print(f'File already created {tandemx_tile_tpi}')
+    else: tandemx_tile_tpi = dem_derivatives(tandemx_tile, tandemx_tile_tpi, mode='TPI')
+    ds['tpi'] = tandemx_tile_tpi
+
+    tandemx_tile_tri = tandemx_tile.replace('.tif', '_TPI.tif')
+    if os.path.isfile(tandemx_tile_tri): print(f'File already created {tandemx_tile_tri}')
+    else: tandemx_tile_tri = dem_derivatives(tandemx_tile, tandemx_tile_tri, mode='TRI')
+    ds['tri'] = tandemx_tile_tri
+
+    tandemx_tile_roughness  = tandemx_tile.replace('.tif', '_roughness.tif')
+    if os.path.isfile(tandemx_tile_roughness): print(f'File already created {tandemx_tile_roughness}')
+    else: tandemx_tile_roughness = dem_derivatives(tandemx_tile, tandemx_tile_roughness, mode='roughness')
+    ds['roughness'] = tandemx_tile_roughness
+
+
+    print(
+    #########################################################################################################
+    ###################################### DEM DERIVATIVES ####################################
+    #########################################################################################################
+    )
+
+#bheight_file, bvolume_file, barea_file, bfraction_file,
+
+    dtype_i = 'Int32'
+    algo_i = 'bilinear'
+
+    bheight_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(bheight_file)).replace('.vrt','.tif')
+    if os.path.isfile(bheight_tile): print(f'File already created {bheight_tile}')
+    else: tdxfnf_tile = gdal_regrid(bheight_file, bheight_tile, xmin, ymin, xmax, ymax,algo_i,dtype_i)
+    ds['bheight'] = bheight_tile
+
+    barea_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(barea_file)).replace('.vrt','.tif')
+    if os.path.isfile(barea_tile): print(f'File already created {barea_tile}')
+    else: tdxfnf_tile = gdal_regrid(barea_file, barea_tile, xmin, ymin, xmax, ymax,algo_i,dtype_i)
+    ds['barea'] = barea_tile
+
+    bfraction_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(bfraction_file)).replace('.vrt','.tif')
+    if os.path.isfile(bfraction_tile): print(f'File already created {bfraction_tile}')
+    else: tdxfnf_tile = gdal_regrid(bfraction_file, bfraction_tile, xmin, ymin, xmax, ymax,algo_c,dtype_c)
+    ds['bfraction'] = bfraction_tile
+
+
+    bvolume_tile = os.path.join(outdir_tile, tile_name +'_'+os.path.basename(bvolume_file)).replace('.vrt','.tif')
+    if os.path.isfile(bvolume_tile): print(f'File already created {bvolume_tile}')
+    else: tdxfnf_tile = gdal_regrid(bvolume_file, bvolume_tile, xmin, ymin, xmax, ymax)
+    ds['bvolume'] = bvolume_tile
+
+   
+
+
+    print(
+    #########################################################################################################
     ###################################### CREATING CSV WITH PATHS TO FILES ################################
     #########################################################################################################
     )
 
     csv_out = os.path.join(outdir_tile,f'{REGION}_{tile_name}.csv')
-    if os.path.isfile(csv_out):
-        print(f'File already exist {csv_out}')
-    else:
-        print(f'creating a new {csv_out}')
-        tnames  = list(ds.keys())
-        tpaths  = list(ds.values())
-        df = pd.DataFrame(tpaths, columns=['path'])
-        df['name'] = tnames
-        df.to_csv(csv_out, index=True)
+    dict2csv(ds, csv_out)
+
+    
