@@ -497,7 +497,7 @@ def tiling_pipeline(
     else: tandemx_tile_tpi = dem_derivatives(tandemx_tile, tandemx_tile_tpi, mode='TPI')
     ds['tpi'] = tandemx_tile_tpi
 
-    tandemx_tile_tri = tandemx_tile.replace('.tif', '_TPI.tif')
+    tandemx_tile_tri = tandemx_tile.replace('.tif', '_TRI.tif')
     if os.path.isfile(tandemx_tile_tri): print(f'File already created {tandemx_tile_tri}')
     else: tandemx_tile_tri = dem_derivatives(tandemx_tile, tandemx_tile_tri, mode='TRI')
     ds['tri'] = tandemx_tile_tri

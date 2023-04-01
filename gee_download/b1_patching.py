@@ -19,7 +19,7 @@ if __name__ == '__main__':
     with ProcessPoolExecutor(cpus) as PEX:
         tilenames = os.listdir(wdir)
         for i in range(len(tilenames)):
-            if i >= 1: break
+            #if i >= 1: break
             itile = tilenames[i]
             tile_path = os.path.join(wdir, itile)
             fs_tile = sorted(glob(f'{tile_path}/*.tif'))

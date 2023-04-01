@@ -25,6 +25,7 @@ if __name__ == '__main__':
             fo = fi.replace('..tif','.tif')
             os.rename(fi, fo)
 
+        fs = dirlistfiles(tile_patches_path, 'tif', True)
         zdif_files = files_filter_list(fs, 'zdif')
         lidar_files = files_filter_list(fs, 'LiDAR_MekongDelta_EGM08')
 
